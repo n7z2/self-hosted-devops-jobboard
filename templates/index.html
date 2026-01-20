@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>n7z Job Board</title>
+    <title>DevOps Job Board</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -251,6 +251,8 @@
         .btn-hide:hover { background: #64748b; color: white; }
         .btn-open { background: #3b82f6; color: white; }
         .btn-open:hover { background: #2563eb; }
+        .btn-donate { background: #374151; color: white; }
+        .btn-donate:hover { background: #4b5563; }
         .no-jobs {
             text-align: center;
             padding: 60px 20px;
@@ -375,8 +377,9 @@
     <div class="container">
         <header>
             <div class="header-top">
-                <h1>n7z Job Board</h1>
+                <h1>DevOps Job Board</h1>
                 <div class="scrape-section">
+                    <button class="btn btn-donate" onclick="window.open('https://buymeacoffee.com/n7z2', '_blank')" title="Support this project">Buy Me a Coffee</button>
                     {% if scraper_status.message %}
                     <span class="scrape-status {% if scraper_status.running %}running{% endif %}">
                         {{ scraper_status.message }}
@@ -445,40 +448,19 @@
 
         <div class="keywords-section">
             <div class="keywords-header">
-                <label>Allowed Locations:</label>
-                <span class="keywords-hint">Jobs must match one of these locations</span>
+                <label>Locations:</label>
+                <span class="keywords-hint">Jobs matching any of these will be shown (e.g., "canada" matches all Canadian locations)</span>
             </div>
             <div class="keywords-input-container">
-                <div class="keywords-tags" id="allowed-locations-tags">
-                    {% for loc in locations.allowed[:15] %}
+                <div class="keywords-tags" id="locations-tags">
+                    {% for loc in locations.allowed %}
                     <span class="keyword-tag location-tag" data-location="{{ loc }}">
                         {{ loc }}
-                        <button type="button" onclick="removeLocation('allowed', '{{ loc }}')">&times;</button>
-                    </span>
-                    {% endfor %}
-                    {% if locations.allowed|length > 15 %}
-                    <span class="keyword-tag" style="background: #475569; cursor: pointer;" onclick="showAllLocations('allowed')" id="more-allowed">+{{ locations.allowed|length - 15 }} more</span>
-                    {% endif %}
-                </div>
-                <input type="text" id="allowed-location-input" placeholder="Add allowed location..." onkeydown="handleLocationInput(event, 'allowed')">
-            </div>
-        </div>
-
-        <div class="keywords-section">
-            <div class="keywords-header">
-                <label>Excluded Locations:</label>
-                <span class="keywords-hint">Jobs matching these will be filtered out</span>
-            </div>
-            <div class="keywords-input-container" style="border-color: #ef4444;">
-                <div class="keywords-tags" id="excluded-locations-tags">
-                    {% for loc in locations.excluded %}
-                    <span class="keyword-tag location-tag" style="background: #7f1d1d;" data-location="{{ loc }}">
-                        {{ loc }}
-                        <button type="button" onclick="removeLocation('excluded', '{{ loc }}')">&times;</button>
+                        <button type="button" onclick="removeLocation('{{ loc }}')">&times;</button>
                     </span>
                     {% endfor %}
                 </div>
-                <input type="text" id="excluded-location-input" placeholder="Add excluded location..." onkeydown="handleLocationInput(event, 'excluded')">
+                <input type="text" id="location-input" placeholder="Add location..." onkeydown="handleLocationInput(event)">
             </div>
         </div>
 
@@ -596,8 +578,7 @@
         let keywords = {{ keywords | tojson | safe }};
 
         // Locations management
-        let locations = {{ locations | tojson | safe }};
-        let showingAllAllowed = false;
+        let locations = {{ locations.allowed | tojson | safe }};
 
         function showToast(message, type = '') {
             const toast = document.getElementById('toast');
@@ -655,56 +636,40 @@
         }
 
         // Location management functions
-        function handleLocationInput(event, type) {
+        function handleLocationInput(event) {
             const input = event.target;
             const value = input.value.trim();
 
             if ((event.key === ',' || event.key === 'Enter') && value) {
                 event.preventDefault();
                 const location = value.replace(/,/g, '').trim().toLowerCase();
-                if (location && !locations[type].includes(location)) {
-                    addLocation(type, location);
+                if (location && !locations.includes(location)) {
+                    addLocation(location);
                 }
                 input.value = '';
             }
         }
 
-        function addLocation(type, location) {
-            locations[type].push(location);
-            updateLocationTags(type);
+        function addLocation(location) {
+            locations.push(location);
+            updateLocationTags();
             saveLocations();
         }
 
-        function removeLocation(type, location) {
-            locations[type] = locations[type].filter(l => l !== location);
-            updateLocationTags(type);
+        function removeLocation(location) {
+            locations = locations.filter(l => l !== location);
+            updateLocationTags();
             saveLocations();
         }
 
-        function updateLocationTags(type) {
-            const container = document.getElementById(type + '-locations-tags');
-            const isExcluded = type === 'excluded';
-            const locs = locations[type];
-            const displayLocs = (type === 'allowed' && !showingAllAllowed) ? locs.slice(0, 15) : locs;
-            const bgStyle = isExcluded ? 'background: #7f1d1d;' : '';
-
-            let html = displayLocs.map(l => `
-                <span class="keyword-tag location-tag" style="${bgStyle}" data-location="${l}">
+        function updateLocationTags() {
+            const container = document.getElementById('locations-tags');
+            container.innerHTML = locations.map(l => `
+                <span class="keyword-tag location-tag" data-location="${l}">
                     ${l}
-                    <button type="button" onclick="removeLocation('${type}', '${l}')">&times;</button>
+                    <button type="button" onclick="removeLocation('${l}')">&times;</button>
                 </span>
             `).join('');
-
-            if (type === 'allowed' && !showingAllAllowed && locs.length > 15) {
-                html += `<span class="keyword-tag" style="background: #475569; cursor: pointer;" onclick="showAllLocations('allowed')">+${locs.length - 15} more</span>`;
-            }
-
-            container.innerHTML = html;
-        }
-
-        function showAllLocations(type) {
-            showingAllAllowed = true;
-            updateLocationTags(type);
         }
 
         async function saveLocations() {
@@ -712,7 +677,7 @@
                 await fetch('/api/locations', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(locations)
+                    body: JSON.stringify({allowed: locations})
                 });
             } catch (err) {
                 console.error('Failed to save locations:', err);

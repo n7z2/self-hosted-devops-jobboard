@@ -7,6 +7,7 @@ Simple Flask app to view and track job applications
 from flask import Flask, render_template, jsonify, request
 import json
 import os
+import re
 from datetime import datetime, timedelta
 import sqlite3
 import threading
@@ -35,21 +36,12 @@ KEYWORDS_FILE = os.path.join(DATA_DIR, 'keywords.json')
 LOCATIONS_FILE = os.path.join(DATA_DIR, 'locations.json')
 COMPANIES_FILE = os.path.join(os.path.dirname(__file__), 'companies.json')
 
-# Default locations
+# Default locations - these act as wildcards (e.g., "canada" matches any Canadian location)
 DEFAULT_LOCATIONS = {
     'allowed': [
         'united states', 'usa', 'u.s.', 'america',
-        'california', 'new york', 'texas', 'florida', 'washington', 'colorado',
-        'san francisco', 'los angeles', 'seattle', 'austin', 'denver', 'boston',
-        'chicago', 'atlanta', 'nyc', 'new york city', 'bay area', 'silicon valley',
-        'canada', 'canadian', 'toronto', 'vancouver', 'montreal', 'calgary',
-        'ottawa', 'ontario', 'british columbia', 'quebec',
-        'north america', 'americas', 'us/canada', 'remote', 'worldwide', 'global', 'anywhere'
-    ],
-    'excluded': [
-        'europe only', 'eu only', 'uk only', 'emea only', 'apac only',
-        'india only', 'australia only', 'vienna', 'berlin', 'london',
-        'paris', 'amsterdam', 'dublin', 'singapore', 'tokyo', 'sydney'
+        'canada', 'north america', 'americas', 'us/canada',
+        'remote', 'worldwide', 'global', 'anywhere'
     ]
 }
 
@@ -60,7 +52,11 @@ def load_locations():
     if os.path.exists(LOCATIONS_FILE):
         try:
             with open(LOCATIONS_FILE, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Handle both old format (with excluded) and new format (allowed only)
+                if isinstance(data, dict) and 'allowed' in data:
+                    return {'allowed': data['allowed']}
+                return data
         except:
             pass
 
@@ -70,10 +66,7 @@ def load_locations():
             with open(COMPANIES_FILE, 'r') as f:
                 data = json.load(f)
                 if 'locations' in data:
-                    return {
-                        'allowed': data['locations'].get('allowed', []),
-                        'excluded': data['locations'].get('excluded', [])
-                    }
+                    return {'allowed': data['locations'].get('allowed', [])}
         except:
             pass
 
@@ -160,26 +153,27 @@ def detect_work_type(job):
 
 
 def is_job_in_allowed_location(job, locations=None):
-    """Check if job location matches allowed locations"""
+    """Check if job location matches allowed locations (word boundary matching)"""
     if locations is None:
         locations = load_locations()
 
     location = job.get('location', '').lower()
-    description = job.get('description', '').lower()
-    text = f"{location} {description}"
+    title = job.get('title', '').lower()
 
+    # Check location field and title for allowed terms
+    text = f"{location} {title}"
     allowed = locations.get('allowed', [])
-    excluded = locations.get('excluded', [])
 
-    # Check excluded locations first
-    if any(term.lower() in text for term in excluded):
-        return False
+    # Check if any allowed term appears as a whole word (not substring)
+    # This prevents "usa" matching "australia"
+    for term in allowed:
+        term_lower = term.lower()
+        # Use word boundary regex to match whole words only
+        pattern = r'\b' + re.escape(term_lower) + r'\b'
+        if re.search(pattern, text):
+            return True
 
-    # Check allowed locations
-    if any(term.lower() in text for term in allowed):
-        return True
-
-    # If job is remote and no excluded terms found, include it
+    # If job is marked as remote and remote is in allowed list
     if job.get('remote', False) and 'remote' in [t.lower() for t in allowed]:
         return True
 
@@ -514,16 +508,14 @@ def set_locations():
     """Set location filters"""
     data = request.json
     allowed = data.get('allowed', [])
-    excluded = data.get('excluded', [])
 
-    if not isinstance(allowed, list) or not isinstance(excluded, list):
-        return jsonify({'error': 'Allowed and excluded must be lists'}), 400
+    if not isinstance(allowed, list):
+        return jsonify({'error': 'Allowed must be a list'}), 400
 
     # Clean and validate
     clean_allowed = [loc.strip().lower() for loc in allowed if loc and isinstance(loc, str)]
-    clean_excluded = [loc.strip().lower() for loc in excluded if loc and isinstance(loc, str)]
 
-    locations = {'allowed': clean_allowed, 'excluded': clean_excluded}
+    locations = {'allowed': clean_allowed}
     save_locations(locations)
     return jsonify({'success': True, 'locations': locations})
 
