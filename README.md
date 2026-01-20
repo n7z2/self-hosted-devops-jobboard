@@ -2,6 +2,10 @@
 
 A self hosted job scraper and web interface for finding DevOps, SRE, and Platform Engineering jobs in the US and Canada. I developed this because going through every single company career site searching for DevOps related roles is a tiresome process and there are alot of sites that already do they but they usually require some king of payement. Well you can now do this for free and self host your own job site with the ability to hide and mark a job as applied to keep track of your job applications. 
 
+There is no catch or paid service for this but feel free to donate below if you like what you see and if it has helped you in any way.
+
+https://buymeacoffee.com/n7z2
+
 ## What It Does
 
 This tool automatically scrapes job postings from multiple sources:
