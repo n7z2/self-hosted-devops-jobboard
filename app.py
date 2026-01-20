@@ -9,9 +9,11 @@ import json
 import os
 from datetime import datetime, timedelta
 import sqlite3
-import subprocess
 import threading
 import math
+
+from scraper import run_scraper as scraper_run
+from discovery import run_discovery as discovery_run
 
 app = Flask(__name__)
 
@@ -244,26 +246,19 @@ def run_scraper(mode='quick'):
     scraper_status['message'] = f'Scraping jobs ({mode} mode)...'
 
     try:
-        scraper_path = os.path.join(os.path.dirname(__file__), 'scraper.py')
         keywords = load_keywords()
-        keywords_arg = ','.join(keywords)
+        output_path = os.path.join(DATA_DIR, 'devops_jobs')
 
-        cmd = [
-            'python', scraper_path,
-            f'--{mode}',
-            '--parallel',
-            '--keywords', keywords_arg,
-            '-o', os.path.join(DATA_DIR, 'devops_jobs')
-        ]
-
-        # 30 min timeout for full scan with parallel processing
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        scraper_run(
+            mode=mode,
+            keywords=keywords,
+            output_path=output_path,
+            parallel=True,
+            workers=10
+        )
 
         scraper_status['last_run'] = datetime.now().isoformat()
-        if result.returncode == 0:
-            scraper_status['message'] = 'Scrape completed successfully!'
-        else:
-            scraper_status['message'] = f'Scrape finished with errors: {result.stderr[:200]}'
+        scraper_status['message'] = 'Scrape completed successfully!'
     except Exception as e:
         scraper_status['message'] = f'Scrape failed: {str(e)}'
     finally:
@@ -544,29 +539,18 @@ def run_discovery():
     discovery_status['message'] = 'Discovering companies...'
 
     try:
-        discovery_path = os.path.join(os.path.dirname(__file__), 'discovery.py')
-        cmd = ['python', discovery_path, '--parallel']
-
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        stats = discovery_run(parallel=True)
 
         discovery_status['last_run'] = datetime.now().isoformat()
-        if result.returncode == 0:
-            # Load stats from discovered file
-            discovered_file = os.path.join(DATA_DIR, 'discovered_companies.json')
-            if os.path.exists(discovered_file):
-                with open(discovered_file, 'r') as f:
-                    data = json.load(f)
-                    discovery_status['stats'] = {
-                        'greenhouse': len(data.get('greenhouse', {})),
-                        'lever': len(data.get('lever', {})),
-                        'ashby': len(data.get('ashby', {})),
-                        'smartrecruiters': len(data.get('smartrecruiters', {})),
-                        'bamboohr': len(data.get('bamboohr', {})),
-                    }
-                    discovery_status['stats']['total'] = sum(discovery_status['stats'].values())
-            discovery_status['message'] = f"Discovery complete! Found {discovery_status['stats'].get('total', 0)} companies."
-        else:
-            discovery_status['message'] = f'Discovery finished with errors: {result.stderr[:200]}'
+        discovery_status['stats'] = {
+            'greenhouse': stats.get('greenhouse', 0),
+            'lever': stats.get('lever', 0),
+            'ashby': stats.get('ashby', 0),
+            'smartrecruiters': stats.get('smartrecruiters', 0),
+            'bamboohr': stats.get('bamboohr', 0),
+            'total': stats.get('total', 0),
+        }
+        discovery_status['message'] = f"Discovery complete! Found {discovery_status['stats'].get('total', 0)} companies."
     except Exception as e:
         discovery_status['message'] = f'Discovery failed: {str(e)}'
     finally:

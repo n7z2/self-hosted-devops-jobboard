@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 """
-Company Discovery Script
-Discovers new companies and their ATS systems for job scraping
+Company Discovery Module
+Discovers new companies and their ATS systems for job scraping.
+This module is designed to be called from the web application only.
 """
 
 import requests
@@ -1520,32 +1520,30 @@ class CompanyDiscovery:
         }
 
 
-def main():
-    """Run company discovery"""
-    import argparse
+def run_discovery(parallel=True):
+    """
+    Run company discovery.
 
-    parser = argparse.ArgumentParser(description='Discover companies and their ATS systems')
-    parser.add_argument('--parallel', '-p', action='store_true', help='Use parallel processing')
-    args = parser.parse_args()
+    Args:
+        parallel: Use parallel processing (default True)
 
+    Returns:
+        Dictionary with discovery statistics
+    """
     discovery = CompanyDiscovery()
 
     logger.info("Starting company discovery...")
-    stats = discovery.discover_from_lists(parallel=args.parallel)
+    stats = discovery.discover_from_lists(parallel=parallel)
 
-    print("\n" + "=" * 60)
-    print("DISCOVERY COMPLETE")
-    print("=" * 60)
-    print(f"New Greenhouse companies: {stats['greenhouse']}")
-    print(f"New Lever companies: {stats['lever']}")
-    print(f"New Ashby companies: {stats['ashby']}")
-    print(f"New SmartRecruiters companies: {stats['smartrecruiters']}")
-    print(f"New BambooHR companies: {stats['bamboohr']}")
-    print(f"\nTotal companies in database: {discovery.get_stats()['total']}")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("DISCOVERY COMPLETE")
+    logger.info("=" * 60)
+    logger.info(f"New Greenhouse companies: {stats['greenhouse']}")
+    logger.info(f"New Lever companies: {stats['lever']}")
+    logger.info(f"New Ashby companies: {stats['ashby']}")
+    logger.info(f"New SmartRecruiters companies: {stats['smartrecruiters']}")
+    logger.info(f"New BambooHR companies: {stats['bamboohr']}")
+    logger.info(f"Total companies in database: {discovery.get_stats()['total']}")
+    logger.info("=" * 60)
 
     return discovery.get_stats()
-
-
-if __name__ == "__main__":
-    main()

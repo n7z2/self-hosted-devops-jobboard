@@ -1,17 +1,11 @@
-#!/usr/bin/env python3
 """
 n7z Job Scraper
 Finds DevOps jobs in US/Canada from multiple sources.
-
-Usage:
-    python scraper.py --quick          # Fast API-only scan
-    python scraper.py --full           # Full scan all sources
-    python scraper.py --parallel       # Enable parallel processing
+This module is designed to be called from the web application only.
 """
 
 import json
 import os
-import argparse
 import logging
 from datetime import datetime
 from typing import List, Dict
@@ -164,21 +158,31 @@ def print_summary(jobs: List[Job]):
     print("=" * 60)
 
 
-def main():
-    parser = argparse.ArgumentParser(description='n7z Job Scraper - Find DevOps jobs in US/Canada')
-    parser.add_argument('--output', '-o', default=os.path.join(DATA_DIR, 'devops_jobs'), help='Output path')
-    parser.add_argument('--quick', '-q', action='store_true', help='Quick scan - API sources only')
-    parser.add_argument('--full', action='store_true', help='Full scan - all sources')
-    parser.add_argument('--parallel', '-p', action='store_true', help='Enable parallel processing')
-    parser.add_argument('--workers', '-w', type=int, default=10, help='Number of parallel workers')
-    parser.add_argument('--keywords', '-k', type=str, default='', help='Comma-separated keywords')
-    args = parser.parse_args()
+def run_scraper(mode='quick', keywords=None, output_path=None, parallel=True, workers=10):
+    """
+    Run the job scraper.
+
+    Args:
+        mode: 'quick' for API sources only, 'full' for all sources
+        keywords: List of keywords to search for, or None to load from config
+        output_path: Path to save jobs, or None for default
+        parallel: Enable parallel processing
+        workers: Number of parallel workers
+
+    Returns:
+        List of unique jobs found
+    """
+    if output_path is None:
+        output_path = os.path.join(DATA_DIR, 'devops_jobs')
 
     # Load configuration
     companies = load_companies()
     discovered = load_discovered_companies()
-    keywords = args.keywords.split(',') if args.keywords else load_keywords()
+
+    if keywords is None:
+        keywords = load_keywords()
     keywords = [k.strip() for k in keywords if k.strip()]
+
     locations = load_locations()
 
     logger.info(f"Keywords: {keywords}")
@@ -186,8 +190,8 @@ def main():
 
     # Scraper configuration
     config = {
-        'parallel_mode': args.parallel,
-        'max_workers': args.workers,
+        'parallel_mode': parallel,
+        'max_workers': workers,
         'keywords': keywords,
         'allowed_locations': locations.get('allowed', []),
         'excluded_locations': locations.get('excluded', [])
@@ -222,10 +226,10 @@ def main():
     ]
 
     # Select scrapers based on mode
-    if args.quick:
+    if mode == 'quick':
         scrapers = fast_scrapers
         logger.info("QUICK MODE - API sources only")
-    elif args.full:
+    elif mode == 'full':
         scrapers = fast_scrapers + medium_scrapers
         logger.info("FULL MODE - All sources")
     else:
@@ -246,11 +250,7 @@ def main():
     unique_jobs = deduplicate_jobs(all_jobs)
     logger.info(f"Total unique jobs: {len(unique_jobs)}")
 
-    save_jobs(unique_jobs, args.output)
+    save_jobs(unique_jobs, output_path)
     print_summary(unique_jobs)
 
     return unique_jobs
-
-
-if __name__ == "__main__":
-    main()
