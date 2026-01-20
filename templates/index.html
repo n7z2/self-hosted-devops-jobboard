@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n7z Job Board</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        h1 { font-size: 24px; color: #38bdf8; }
+        .stats { display: flex; gap: 15px; flex-wrap: wrap; }
+        .stat {
+            background: #334155;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value { font-size: 24px; font-weight: bold; color: #38bdf8; }
+        .stat-label { font-size: 12px; color: #94a3b8; }
+        .scrape-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .keywords-section {
+            background: #1e293b;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .keywords-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .keywords-header label {
+            font-size: 14px;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+        .keywords-hint {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .keywords-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 8px 12px;
+            min-height: 44px;
+        }
+        .keywords-input-container:focus-within {
+            border-color: #38bdf8;
+        }
+        .keywords-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .keyword-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #374151;
+            color: #e2e8f0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .keyword-tag button {
+            background: transparent;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1;
+            padding: 0;
+            margin-left: 4px;
+        }
+        .keyword-tag button:hover {
+            color: #ef4444;
+        }
+        #keyword-input {
+            flex: 1;
+            min-width: 150px;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            font-size: 14px;
+            outline: none;
+        }
+        #keyword-input::placeholder {
+            color: #64748b;
+        }
+        .filters {
+            background: #1e293b;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-group label { font-size: 14px; color: #94a3b8; }
+        select, input[type="checkbox"] {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        select:focus { outline: none; border-color: #38bdf8; }
+        .job-list { display: flex; flex-direction: column; gap: 12px; }
+        .job-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid transparent;
+        }
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-color: #334155;
+        }
+        .job-card.applied { border-left: 4px solid #22c55e; }
+        .job-card.hidden { opacity: 0.5; }
+        .job-main { display: flex; flex-direction: column; gap: 8px; }
+        .job-title { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+        .job-title a { color: inherit; text-decoration: none; }
+        .job-title a:hover { color: #38bdf8; }
+        .job-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .job-company { color: #60a5fa; font-weight: 500; }
+        .job-salary { color: #22c55e; font-weight: 500; }
+        .job-source {
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .job-date { font-size: 12px; color: #64748b; }
+        .job-details {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .job-details .job-salary {
+            color: #22c55e;
+            font-weight: 500;
+        }
+        .job-work-type {
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .job-work-type.remote {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .job-work-type.hybrid {
+            background: #92400e;
+            color: #fcd34d;
+        }
+        .job-work-type.onsite {
+            background: #475569;
+            color: #94a3b8;
+        }
+        .job-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-discover { background: #831843; color: white; }
+        .btn-discover:hover { background: #9f1239; }
+        .btn-discover:disabled { background: #475569; cursor: not-allowed; }
+        .btn-scrape { background: #8b5cf6; color: white; }
+        .btn-scrape:hover { background: #7c3aed; }
+        .btn-scrape:disabled { background: #475569; cursor: not-allowed; }
+        .btn-apply { background: #22c55e; color: white; }
+        .btn-apply:hover { background: #16a34a; }
+        .btn-applied {
+            background: #334155;
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .btn-applied:hover { background: #3f4f65; }
+        .btn-hide {
+            background: #475569;
+            color: #94a3b8;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        .btn-hide:hover { background: #64748b; color: white; }
+        .btn-open { background: #3b82f6; color: white; }
+        .btn-open:hover { background: #2563eb; }
+        .no-jobs {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        .no-jobs h2 { font-size: 20px; margin-bottom: 10px; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #8b5cf6; }
+        .scrape-status {
+            font-size: 12px;
+            color: #94a3b8;
+            padding: 5px 10px;
+            background: #334155;
+            border-radius: 4px;
+        }
+        .scrape-status.running { color: #fbbf24; }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: #334155;
+            min-width: 160px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 100;
+            overflow: hidden;
+        }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown-content button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: #e2e8f0;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .dropdown-content button:hover { background: #475569; }
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .pagination-info {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn-page {
+            background: #334155;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-page:hover:not(:disabled) {
+            background: #475569;
+        }
+        .btn-page:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .page-indicator {
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 0 10px;
+        }
+        @media (max-width: 768px) {
+            .job-card { grid-template-columns: 1fr; }
+            .job-actions { flex-direction: row; flex-wrap: wrap; }
+            .header-top { flex-direction: column; align-items: stretch; }
+            .pagination { flex-direction: column; text-align: center; }
+            .pagination-controls { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>n7z Job Board</h1>
+                <div class="scrape-section">
+                    {% if scraper_status.message %}
+                    <span class="scrape-status {% if scraper_status.running %}running{% endif %}">
+                        {{ scraper_status.message }}
+                    </span>
+                    {% endif %}
+                    <button class="btn btn-discover" id="discover-btn" onclick="startDiscovery()" title="Scan through Greenhouse, Lever, Ashby, SmartRecruiters, and BambooHR to discover new companies and add them to your job search database">
+                        <span id="discover-spinner" class="spinner" style="display: none;"></span>
+                        <span id="discover-text">Discover Companies</span>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-scrape" id="scrape-btn" {% if scraper_status.running %}disabled{% endif %} title="Search all discovered companies for new job postings matching your keywords">
+                            {% if scraper_status.running %}
+                            <span class="spinner"></span> Scraping...
+                            {% else %}
+                            Find New Jobs
+                            {% endif %}
+                        </button>
+                        <div class="dropdown-content">
+                            <button onclick="startScrape('quick')" title="Fast scan using APIs only (Greenhouse, Lever, Remotive, HackerNews) - takes 1-2 minutes">Quick Scan (APIs only)</button>
+                            <button onclick="startScrape('full')" title="Comprehensive scan of all sources including company career pages, LinkedIn, and all ATS systems - takes 5-15 minutes">Full Scan (All sources)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat" title="Total number of jobs found across all scans">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">Total Jobs</div>
+                </div>
+                <div class="stat" title="Jobs currently visible after applying filters">
+                    <div class="stat-value">{{ stats.visible }}</div>
+                    <div class="stat-label">Visible</div>
+                </div>
+                <div class="stat" title="Jobs you've marked as applied to">
+                    <div class="stat-value">{{ stats.applied }}</div>
+                    <div class="stat-label">Applied</div>
+                </div>
+                <div class="stat" title="Jobs you've hidden from the list">
+                    <div class="stat-value">{{ stats.hidden }}</div>
+                    <div class="stat-label">Hidden</div>
+                </div>
+                <div class="stat" title="Total companies discovered across all ATS systems (Greenhouse, Lever, Ashby, SmartRecruiters, BambooHR)">
+                    <div class="stat-value">{{ company_stats.total }}</div>
+                    <div class="stat-label">Companies</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="keywords-section">
+            <div class="keywords-header">
+                <label>Search Keywords:</label>
+                <span class="keywords-hint">Press comma or Enter to add keyword</span>
+            </div>
+            <div class="keywords-input-container">
+                <div class="keywords-tags" id="keywords-tags">
+                    {% for keyword in keywords %}
+                    <span class="keyword-tag" data-keyword="{{ keyword }}">
+                        {{ keyword }}
+                        <button type="button" onclick="removeKeyword('{{ keyword }}')">&times;</button>
+                    </span>
+                    {% endfor %}
+                </div>
+                <input type="text" id="keyword-input" placeholder="Type a keyword..." onkeydown="handleKeywordInput(event)">
+            </div>
+        </div>
+
+        <div class="keywords-section">
+            <div class="keywords-header">
+                <label>Allowed Locations:</label>
+                <span class="keywords-hint">Jobs must match one of these locations</span>
+            </div>
+            <div class="keywords-input-container">
+                <div class="keywords-tags" id="allowed-locations-tags">
+                    {% for loc in locations.allowed[:15] %}
+                    <span class="keyword-tag location-tag" data-location="{{ loc }}">
+                        {{ loc }}
+                        <button type="button" onclick="removeLocation('allowed', '{{ loc }}')">&times;</button>
+                    </span>
+                    {% endfor %}
+                    {% if locations.allowed|length > 15 %}
+                    <span class="keyword-tag" style="background: #475569; cursor: pointer;" onclick="showAllLocations('allowed')" id="more-allowed">+{{ locations.allowed|length - 15 }} more</span>
+                    {% endif %}
+                </div>
+                <input type="text" id="allowed-location-input" placeholder="Add allowed location..." onkeydown="handleLocationInput(event, 'allowed')">
+            </div>
+        </div>
+
+        <div class="keywords-section">
+            <div class="keywords-header">
+                <label>Excluded Locations:</label>
+                <span class="keywords-hint">Jobs matching these will be filtered out</span>
+            </div>
+            <div class="keywords-input-container" style="border-color: #ef4444;">
+                <div class="keywords-tags" id="excluded-locations-tags">
+                    {% for loc in locations.excluded %}
+                    <span class="keyword-tag location-tag" style="background: #7f1d1d;" data-location="{{ loc }}">
+                        {{ loc }}
+                        <button type="button" onclick="removeLocation('excluded', '{{ loc }}')">&times;</button>
+                    </span>
+                    {% endfor %}
+                </div>
+                <input type="text" id="excluded-location-input" placeholder="Add excluded location..." onkeydown="handleLocationInput(event, 'excluded')">
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>Source:</label>
+                <select id="source-filter" onchange="applyFilters()" title="Filter jobs by where they were found (e.g., Greenhouse, Lever, LinkedIn)">
+                    <option value="">All Sources</option>
+                    {% for source in sources %}
+                    <option value="{{ source }}" {% if filter_source == source %}selected{% endif %}>{{ source }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Status:</label>
+                <select id="status-filter" onchange="applyFilters()" title="Filter by application status">
+                    <option value="" {% if filter_status == '' %}selected{% endif %}>All</option>
+                    <option value="not_applied" {% if filter_status == 'not_applied' %}selected{% endif %}>Not Applied</option>
+                    <option value="applied" {% if filter_status == 'applied' %}selected{% endif %}>Applied</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Date:</label>
+                <select id="date-filter" onchange="applyFilters()" title="Filter by when the job was found">
+                    <option value="" {% if filter_date == '' %}selected{% endif %}>All Time</option>
+                    <option value="today" {% if filter_date == 'today' %}selected{% endif %}>Today</option>
+                    <option value="3days" {% if filter_date == '3days' %}selected{% endif %}>Last 3 Days</option>
+                    <option value="7days" {% if filter_date == '7days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30days" {% if filter_date == '30days' %}selected{% endif %}>Last 30 Days</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Show:</label>
+                <select id="per-page" onchange="applyFilters()" title="Number of jobs to display per page">
+                    <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if pagination.per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if pagination.per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+                <label>per page</label>
+            </div>
+            <div class="filter-group" title="Check to show jobs you've previously hidden">
+                <input type="checkbox" id="show-hidden" {% if show_hidden %}checked{% endif %} onchange="applyFilters()">
+                <label for="show-hidden">Show Hidden</label>
+            </div>
+        </div>
+
+        <div class="job-list">
+            {% if jobs %}
+                {% for job in jobs %}
+                <div class="job-card {% if job.applied %}applied{% endif %} {% if job.hidden %}hidden{% endif %}">
+                    <div class="job-main">
+                        <div class="job-title">
+                            <a href="{{ job.url }}" target="_blank">{{ job.title }}</a>
+                        </div>
+                        <div class="job-meta">
+                            <span class="job-company">{{ job.company }}</span>
+                            <span>{{ job.location }}</span>
+                            <span class="job-work-type {% if job.work_type == 'Remote' %}remote{% elif job.work_type == 'Hybrid' %}hybrid{% else %}onsite{% endif %}">
+                                {{ job.work_type or 'Work type unknown' }}
+                            </span>
+                            <span class="job-source">{{ job.source }}</span>
+                        </div>
+                        <div class="job-details">
+                            <span class="job-salary">{{ job.salary if job.salary and job.salary != 'Not specified' else 'Salary not specified' }}</span>
+                        </div>
+                        <div class="job-date">Found: {{ job.date_scraped[:10] }}</div>
+                        {% if job.applied and job.applied_info.date %}
+                        <div class="job-date" style="color: #22c55e;">Applied: {{ job.applied_info.date[:10] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="job-actions">
+                        <a href="{{ job.url }}" target="_blank" class="btn btn-open" title="Open job posting in a new tab">Open</a>
+                        {% if job.applied %}
+                        <button class="btn btn-applied" onclick="toggleApplied('{{ job.url }}', true)" title="Click to unmark this job as applied">Applied</button>
+                        {% else %}
+                        <button class="btn btn-apply" onclick="toggleApplied('{{ job.url }}', false)" title="Mark this job as applied to track your applications">Mark Applied</button>
+                        {% endif %}
+                        {% if job.hidden %}
+                        <button class="btn btn-hide" onclick="toggleHidden('{{ job.url }}', true)" title="Show this job in the list again">Unhide</button>
+                        {% else %}
+                        <button class="btn btn-hide" onclick="toggleHidden('{{ job.url }}', false)" title="Hide this job from the list (not interested)">Hide</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-jobs">
+                    <h2>No jobs found</h2>
+                    <p>Click "Find New Jobs" to scrape for DevOps positions.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if pagination.total_pages > 1 %}
+        <div class="pagination">
+            <div class="pagination-info">
+                Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} - {{ [pagination.page * pagination.per_page, pagination.total_jobs] | min }} of {{ pagination.total_jobs }} jobs
+            </div>
+            <div class="pagination-controls">
+                <button class="btn btn-page" onclick="goToPage(1)" {% if not pagination.has_prev %}disabled{% endif %}>&laquo; First</button>
+                <button class="btn btn-page" onclick="goToPage({{ pagination.page - 1 }})" {% if not pagination.has_prev %}disabled{% endif %}>&lsaquo; Prev</button>
+                <span class="page-indicator">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+                <button class="btn btn-page" onclick="goToPage({{ pagination.page + 1 }})" {% if not pagination.has_next %}disabled{% endif %}>Next &rsaquo;</button>
+                <button class="btn btn-page" onclick="goToPage({{ pagination.total_pages }})" {% if not pagination.has_next %}disabled{% endif %}>Last &raquo;</button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Keywords management
+        let keywords = {{ keywords | tojson | safe }};
+
+        // Locations management
+        let locations = {{ locations | tojson | safe }};
+        let showingAllAllowed = false;
+
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        function handleKeywordInput(event) {
+            const input = event.target;
+            const value = input.value.trim();
+
+            if ((event.key === ',' || event.key === 'Enter') && value) {
+                event.preventDefault();
+                const keyword = value.replace(/,/g, '').trim().toLowerCase();
+                if (keyword && !keywords.includes(keyword)) {
+                    addKeyword(keyword);
+                }
+                input.value = '';
+            }
+        }
+
+        function addKeyword(keyword) {
+            keywords.push(keyword);
+            updateKeywordTags();
+            saveKeywords();
+        }
+
+        function removeKeyword(keyword) {
+            keywords = keywords.filter(k => k !== keyword);
+            updateKeywordTags();
+            saveKeywords();
+        }
+
+        function updateKeywordTags() {
+            const container = document.getElementById('keywords-tags');
+            container.innerHTML = keywords.map(k => `
+                <span class="keyword-tag" data-keyword="${k}">
+                    ${k}
+                    <button type="button" onclick="removeKeyword('${k}')">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        async function saveKeywords() {
+            try {
+                await fetch('/api/keywords', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({keywords: keywords})
+                });
+            } catch (err) {
+                console.error('Failed to save keywords:', err);
+            }
+        }
+
+        // Location management functions
+        function handleLocationInput(event, type) {
+            const input = event.target;
+            const value = input.value.trim();
+
+            if ((event.key === ',' || event.key === 'Enter') && value) {
+                event.preventDefault();
+                const location = value.replace(/,/g, '').trim().toLowerCase();
+                if (location && !locations[type].includes(location)) {
+                    addLocation(type, location);
+                }
+                input.value = '';
+            }
+        }
+
+        function addLocation(type, location) {
+            locations[type].push(location);
+            updateLocationTags(type);
+            saveLocations();
+        }
+
+        function removeLocation(type, location) {
+            locations[type] = locations[type].filter(l => l !== location);
+            updateLocationTags(type);
+            saveLocations();
+        }
+
+        function updateLocationTags(type) {
+            const container = document.getElementById(type + '-locations-tags');
+            const isExcluded = type === 'excluded';
+            const locs = locations[type];
+            const displayLocs = (type === 'allowed' && !showingAllAllowed) ? locs.slice(0, 15) : locs;
+            const bgStyle = isExcluded ? 'background: #7f1d1d;' : '';
+
+            let html = displayLocs.map(l => `
+                <span class="keyword-tag location-tag" style="${bgStyle}" data-location="${l}">
+                    ${l}
+                    <button type="button" onclick="removeLocation('${type}', '${l}')">&times;</button>
+                </span>
+            `).join('');
+
+            if (type === 'allowed' && !showingAllAllowed && locs.length > 15) {
+                html += `<span class="keyword-tag" style="background: #475569; cursor: pointer;" onclick="showAllLocations('allowed')">+${locs.length - 15} more</span>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function showAllLocations(type) {
+            showingAllAllowed = true;
+            updateLocationTags(type);
+        }
+
+        async function saveLocations() {
+            try {
+                await fetch('/api/locations', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(locations)
+                });
+            } catch (err) {
+                console.error('Failed to save locations:', err);
+            }
+        }
+
+        async function startDiscovery() {
+            const btn = document.getElementById('discover-btn');
+            const spinner = document.getElementById('discover-spinner');
+            const text = document.getElementById('discover-text');
+
+            try {
+                const response = await fetch('/api/discover', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                if (response.ok) {
+                    showToast('Discovering companies... This may take a few minutes.', 'info');
+                    btn.disabled = true;
+                    spinner.style.display = 'inline-block';
+                    text.textContent = 'Discovering...';
+                    pollDiscoveryStatus();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to start discovery', 'error');
+                }
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        }
+
+        async function pollDiscoveryStatus() {
+            const btn = document.getElementById('discover-btn');
+            const spinner = document.getElementById('discover-spinner');
+            const text = document.getElementById('discover-text');
+
+            const poll = async () => {
+                try {
+                    const response = await fetch('/api/discover/status');
+                    const data = await response.json();
+
+                    if (data.running) {
+                        setTimeout(poll, 2000);
+                    } else {
+                        btn.disabled = false;
+                        spinner.style.display = 'none';
+                        text.textContent = 'Discover Companies';
+
+                        if (data.stats && data.stats.total) {
+                            showToast(`Discovered ${data.stats.total} companies! Run a scan to find jobs.`);
+                        } else {
+                            showToast(data.message || 'Discovery completed!');
+                        }
+                    }
+                } catch (err) {
+                    setTimeout(poll, 2000);
+                }
+            };
+            poll();
+        }
+
+        function applyFilters(resetPage = true) {
+            const source = document.getElementById('source-filter').value;
+            const status = document.getElementById('status-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+            const perPage = document.getElementById('per-page').value;
+            const showHidden = document.getElementById('show-hidden').checked;
+            const params = new URLSearchParams();
+            if (source) params.set('source', source);
+            if (status) params.set('status', status);
+            if (dateFilter) params.set('date', dateFilter);
+            params.set('per_page', perPage);
+            if (showHidden) params.set('show_hidden', 'true');
+            if (!resetPage) {
+                const currentPage = new URLSearchParams(window.location.search).get('page');
+                if (currentPage) params.set('page', currentPage);
+            }
+            window.location.href = '/?' + params.toString();
+        }
+
+        function goToPage(page) {
+            const params = new URLSearchParams(window.location.search);
+            params.set('page', page);
+            window.location.href = '/?' + params.toString();
+        }
+
+        async function startScrape(mode) {
+            try {
+                const response = await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({mode: mode})
+                });
+                if (response.ok) {
+                    showToast('Scraping started... This may take a few minutes.', 'info');
+                    pollScrapeStatus();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to start scrape', 'error');
+                }
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        }
+
+        async function pollScrapeStatus() {
+            const btn = document.getElementById('scrape-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Scraping...';
+
+            const poll = async () => {
+                try {
+                    const response = await fetch('/api/scrape/status');
+                    const data = await response.json();
+                    if (data.running) {
+                        setTimeout(poll, 2000);
+                    } else {
+                        showToast(data.message || 'Scrape completed!');
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                } catch (err) {
+                    setTimeout(poll, 2000);
+                }
+            };
+            poll();
+        }
+
+        async function toggleApplied(url, isApplied) {
+            try {
+                const endpoint = isApplied ? '/api/unapply' : '/api/apply';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url})
+                });
+                if (response.ok) {
+                    showToast(isApplied ? 'Unmarked' : 'Marked as applied');
+                    setTimeout(() => location.reload(), 500);
+                }
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        }
+
+        async function toggleHidden(url, isHidden) {
+            try {
+                const endpoint = isHidden ? '/api/unhide' : '/api/hide';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url})
+                });
+                if (response.ok) {
+                    showToast(isHidden ? 'Unhidden' : 'Hidden');
+                    setTimeout(() => location.reload(), 500);
+                }
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Check if scrape is running on page load
+        {% if scraper_status.running %}
+        pollScrapeStatus();
+        {% endif %}
+    </script>
+</body>
+</html>
