@@ -1,6 +1,6 @@
 # n7z DevOps Job Board
 
-A self hosted job scraper and web interface for finding DevOps, SRE, and Platform Engineering jobs in the US and Canada. I developed this because going through every single company career site searching for DevOps related roles is a tiresome process and there are alot of sites that already do this, but they usually require some kind of payement or subscription service so this simplfies the whole process. So you can now do this for free and self host your own job site with the ability to hide and mark a job as applied to keep track of your job applications. 
+A self hosted job scraper and web interface for finding DevOps, SRE, and Platform Engineering jobs in the US and Canada. I developed this because going through every single company career site searching for DevOps related roles is a tiresome process and there are alot of sites that already do this, but they usually require some kind of payment or subscription service so this simplfies the whole process. So you can now do this for free and self host your own job site with the ability to hide and mark a job as applied to keep track of your job applications. 
 
 There is no catch or paid service for this but feel free to donate below if you like what you see and if it has helped you in any way.
 
