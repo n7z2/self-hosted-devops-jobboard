@@ -77,8 +77,6 @@ python app.py
 ### Web Interface
 
 1. **Find New Jobs** - Click the dropdown to choose:
-   - **Quick Scan** - API sources only (fast)
-   - **Full Scan** - All sources including LinkedIn
 
 2. **Discover Companies** - Scans ATS systems to find new companies to add to your search
 
