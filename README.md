@@ -17,7 +17,7 @@ This tool automatically scrapes job postings from multiple sources:
 ### Applicant Tracking Systems (ATS)
 - **Greenhouse** - 140+ tech companies (Airbnb, Cloudflare, GitLab, etc.)
 - **Lever** - 100+ companies (1Password, Netlify, Postman, etc.)
-- **Ashby** - 40+ companies (Ramp, Vercel, Linear, etc.)
+- **Ashby** - 40+ companies (Ramp, Linear, etc.)
 - **SmartRecruiters** - Enterprise companies (Visa, Salesforce, Adobe, etc.)
 - **BambooHR** - Mid-size companies
 
