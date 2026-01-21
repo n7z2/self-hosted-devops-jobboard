@@ -130,18 +130,17 @@ def load_jobs():
     return load_json_file(JOBS_FILE, [])
 
 
-def run_scraper(mode='quick'):
+def run_scraper():
     """Run the job scraper in background"""
     global scraper_status
     scraper_status['running'] = True
-    scraper_status['message'] = f'Scraping jobs ({mode} mode)...'
+    scraper_status['message'] = 'Scraping jobs...'
 
     try:
         keywords = load_keywords()
         output_path = os.path.join(DATA_DIR, 'devops_jobs')
 
         scraper_run(
-            mode=mode,
             keywords=keywords,
             output_path=output_path,
             parallel=True,
@@ -271,17 +270,11 @@ def start_scrape():
     if scraper_status['running']:
         return jsonify({'error': 'Scraper already running'}), 400
 
-    data = request.json or {}
-    mode = data.get('mode', 'quick')
-
-    if mode not in ['quick', 'full']:
-        mode = 'quick'
-
-    thread = threading.Thread(target=run_scraper, args=(mode,))
+    thread = threading.Thread(target=run_scraper)
     thread.daemon = True
     thread.start()
 
-    return jsonify({'success': True, 'message': f'Started {mode} scrape'})
+    return jsonify({'success': True, 'message': 'Scrape started'})
 
 
 @app.route('/api/scrape/status')

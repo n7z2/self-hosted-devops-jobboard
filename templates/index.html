@@ -294,33 +294,6 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            right: 0;
-            background: #334155;
-            min-width: 160px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 100;
-            overflow: hidden;
-        }
-        .dropdown:hover .dropdown-content { display: block; }
-        .dropdown-content button {
-            width: 100%;
-            padding: 12px 16px;
-            border: none;
-            background: transparent;
-            color: #e2e8f0;
-            text-align: left;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .dropdown-content button:hover { background: #475569; }
         .pagination {
             display: flex;
             justify-content: space-between;
@@ -389,19 +362,13 @@
                         <span id="discover-spinner" class="spinner" style="display: none;"></span>
                         <span id="discover-text">Discover Companies</span>
                     </button>
-                    <div class="dropdown">
-                        <button class="btn btn-scrape" id="scrape-btn" {% if scraper_status.running %}disabled{% endif %} title="Search all discovered companies for new job postings matching your keywords">
-                            {% if scraper_status.running %}
-                            <span class="spinner"></span> Scraping...
-                            {% else %}
-                            Find New Jobs
-                            {% endif %}
-                        </button>
-                        <div class="dropdown-content">
-                            <button onclick="startScrape('quick')" title="Fast scan using APIs only (Greenhouse, Lever, Remotive, HackerNews) - takes 1-2 minutes">Quick Scan (APIs only)</button>
-                            <button onclick="startScrape('full')" title="Comprehensive scan of all sources including company career pages, LinkedIn, and all ATS systems - takes 5-15 minutes">Full Scan (All sources)</button>
-                        </div>
-                    </div>
+                    <button class="btn btn-scrape" id="scrape-btn" onclick="startScrape()" {% if scraper_status.running %}disabled{% endif %} title="Search all discovered companies for new job postings matching your keywords">
+                        {% if scraper_status.running %}
+                        <span class="spinner"></span> Scraping...
+                        {% else %}
+                        Find New Jobs
+                        {% endif %}
+                    </button>
                 </div>
             </div>
             <div class="stats">
@@ -765,13 +732,9 @@
             window.location.href = '/?' + params.toString();
         }
 
-        async function startScrape(mode) {
+        async function startScrape() {
             try {
-                const response = await fetch('/api/scrape', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({mode: mode})
-                });
+                const response = await fetch('/api/scrape', {method: 'POST'});
                 if (response.ok) {
                     showToast('Scraping started... This may take a few minutes.', 'info');
                     pollScrapeStatus();

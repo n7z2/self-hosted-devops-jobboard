@@ -294,128 +294,113 @@ class RemotiveScraper(JobScraper):
     def scrape(self) -> List[Job]:
         logger.info("Scraping Remotive...")
 
-        url = "https://remotive.com/api/remote-jobs?category=devops"
-        response = self.safe_get(url)
+        # Use configured keywords for search, or defaults
+        keywords = self.keywords if self.keywords else DEFAULT_KEYWORDS
+        seen_urls = set()
 
-        if not response:
-            return self.jobs
+        for keyword in keywords:
+            # URL encode the keyword for the search parameter
+            encoded_keyword = keyword.replace(' ', '%20')
+            url = f"https://remotive.com/api/remote-jobs?search={encoded_keyword}"
 
-        try:
-            data = response.json()
+            response = self.safe_get(url)
+            if not response:
+                continue
 
-            for job_data in data.get('jobs', [])[:30]:
-                title = job_data.get('title', 'Unknown')
+            try:
+                data = response.json()
 
-                if not self.matches_keywords(title, job_data.get('description', '')):
-                    continue
+                for job_data in data.get('jobs', [])[:20]:
+                    job_url = job_data.get('url', '')
 
-                location = job_data.get('candidate_required_location', 'Worldwide')
+                    # Skip if we've already seen this job
+                    if job_url in seen_urls:
+                        continue
+                    seen_urls.add(job_url)
 
-                if not self.matches_location(location, job_data.get('description', '')):
-                    continue
+                    title = job_data.get('title', 'Unknown')
+                    location = job_data.get('candidate_required_location', 'Worldwide')
 
-                job = Job(
-                    title=title,
-                    company=job_data.get('company_name', 'Unknown'),
-                    location=location,
-                    salary=job_data.get('salary', 'Not specified'),
-                    url=job_data.get('url', ''),
-                    source="Remotive",
-                    description=BeautifulSoup(job_data.get('description', ''), 'html.parser').get_text()[:500],
-                    remote=True,
-                    date_scraped=datetime.now().isoformat()
-                )
-                self.jobs.append(job)
-                logger.info(f"Found Remotive: {job.title} at {job.company}")
-
-        except Exception as e:
-            logger.error(f"Error parsing Remotive: {e}")
-
-        logger.info(f"RemotiveScraper: Found {len(self.jobs)} jobs")
-        return self.jobs
-
-
-class HackerNewsScraper(JobScraper):
-    """Scraper for Hacker News 'Who is Hiring' threads"""
-
-    def scrape(self) -> List[Job]:
-        logger.info("Scraping Hacker News Who's Hiring...")
-
-        search_url = "https://hn.algolia.com/api/v1/search_by_date?query=who%20is%20hiring&tags=story&hitsPerPage=5"
-        response = self.safe_get(search_url)
-
-        if not response:
-            return self.jobs
-
-        try:
-            data = response.json()
-
-            for hit in data.get('hits', []):
-                if 'who is hiring' in hit.get('title', '').lower():
-                    story_id = hit.get('objectID')
-                    comments_url = f"https://hn.algolia.com/api/v1/items/{story_id}"
-                    comments_response = self.safe_get(comments_url)
-
-                    if not comments_response:
+                    if not self.matches_location(location):
                         continue
 
-                    story_data = comments_response.json()
+                    job = Job(
+                        title=title,
+                        company=job_data.get('company_name', 'Unknown'),
+                        location=location,
+                        salary=job_data.get('salary', 'Not specified'),
+                        url=job_url,
+                        source="Remotive",
+                        description=BeautifulSoup(job_data.get('description', ''), 'html.parser').get_text()[:500],
+                        remote=True,
+                        date_scraped=datetime.now().isoformat()
+                    )
+                    self.jobs.append(job)
+                    logger.info(f"Found Remotive: {job.title} at {job.company}")
 
-                    for comment in story_data.get('children', [])[:100]:
-                        text = comment.get('text', '')
-                        if not text:
-                            continue
+                self.random_delay(0.5, 1)
 
-                        if not self.matches_keywords('', text):
-                            continue
+            except Exception as e:
+                logger.error(f"Error parsing Remotive for keyword '{keyword}': {e}")
 
-                        if not self.matches_location('', text):
-                            continue
-
-                        lines = text.split('\n')
-                        first_line = BeautifulSoup(lines[0], 'html.parser').get_text()
-                        company = first_line.split('|')[0].strip()[:50] if '|' in first_line else "See posting"
-
-                        title_match = re.search(
-                            r'(devops|sre|infrastructure|platform|cloud)\s*(engineer|lead|manager)?',
-                            text.lower()
-                        )
-                        title = title_match.group().title() if title_match else "DevOps Role"
-
-                        job = Job(
-                            title=title,
-                            company=company,
-                            location="Remote",
-                            salary=self.extract_salary(text),
-                            url=f"https://news.ycombinator.com/item?id={comment.get('id')}",
-                            source="HackerNews",
-                            description=BeautifulSoup(text, 'html.parser').get_text()[:500],
-                            remote=True,
-                            date_scraped=datetime.now().isoformat()
-                        )
-                        self.jobs.append(job)
-                        logger.info(f"Found HN: {company}")
-
-                    break
-
-        except Exception as e:
-            logger.error(f"Error parsing HN: {e}")
-
-        logger.info(f"HackerNewsScraper: Found {len(self.jobs)} jobs")
+        logger.info(f"RemotiveScraper: Found {len(self.jobs)} jobs")
         return self.jobs
 
 
 class LinkedInScraper(JobScraper):
     """Scraper for LinkedIn public job postings"""
 
+    def _build_search_urls(self) -> List[str]:
+        """Build LinkedIn search URLs from configured keywords and locations"""
+        keywords = self.keywords if self.keywords else DEFAULT_KEYWORDS
+
+        # Map common location terms to LinkedIn location format
+        location_mapping = {
+            'usa': 'United States',
+            'united states': 'United States',
+            'u.s.': 'United States',
+            'america': 'United States',
+            'canada': 'Canada',
+            'north america': 'United States',
+            'remote': 'Worldwide',
+            'worldwide': 'Worldwide',
+            'global': 'Worldwide',
+            'anywhere': 'Worldwide',
+        }
+
+        # Get unique LinkedIn locations from configured locations
+        linkedin_locations = set()
+        for loc in self.allowed_locations:
+            loc_lower = loc.lower()
+            if loc_lower in location_mapping:
+                linkedin_locations.add(location_mapping[loc_lower])
+            else:
+                # Use the location as-is if not in mapping (capitalize words)
+                linkedin_locations.add(loc.title())
+
+        # Default to US and Canada if no locations configured
+        if not linkedin_locations:
+            linkedin_locations = {'United States', 'Canada'}
+
+        # Build URLs for each keyword + location combination
+        # Limit to first 3 keywords and 2 locations to avoid too many requests
+        urls = []
+        for keyword in keywords[:3]:
+            encoded_keyword = keyword.replace(' ', '%20')
+            for location in list(linkedin_locations)[:2]:
+                encoded_location = location.replace(' ', '%20')
+                # f_WT=2 means remote jobs
+                url = f'https://www.linkedin.com/jobs/search/?keywords={encoded_keyword}&location={encoded_location}&f_WT=2'
+                urls.append(url)
+
+        return urls
+
     def scrape(self) -> List[Job]:
         logger.info("Scraping LinkedIn...")
 
-        searches = [
-            'https://www.linkedin.com/jobs/search/?keywords=devops%20engineer&location=United%20States&f_WT=2',
-            'https://www.linkedin.com/jobs/search/?keywords=sre%20engineer&location=United%20States&f_WT=2',
-            'https://www.linkedin.com/jobs/search/?keywords=devops&location=Canada&f_TPR=r86400',
-        ]
+        # Build dynamic search URLs from keywords and locations
+        searches = self._build_search_urls()
+        seen_urls = set()
 
         for url in searches:
             try:
@@ -436,10 +421,16 @@ class LinkedInScraper(JobScraper):
                         if not title_elem:
                             continue
 
+                        job_url = link_elem['href'] if link_elem else url
+
+                        # Skip if we've already seen this job
+                        if job_url in seen_urls:
+                            continue
+                        seen_urls.add(job_url)
+
                         title = title_elem.get_text(strip=True)
                         company = company_elem.get_text(strip=True) if company_elem else "Unknown"
                         location = location_elem.get_text(strip=True) if location_elem else "Remote"
-                        job_url = link_elem['href'] if link_elem else url
 
                         if not self.matches_keywords(title):
                             continue

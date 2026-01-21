@@ -16,7 +16,7 @@ from config import (
 )
 from scrapers import (
     Job, GreenhouseScraper, LeverScraper, AshbyScraper,
-    RemotiveScraper, HackerNewsScraper, LinkedInScraper
+    RemotiveScraper, LinkedInScraper
 )
 
 # Setup logging
@@ -84,12 +84,11 @@ def print_summary(jobs: List[Job]):
     print("=" * 60)
 
 
-def run_scraper(mode='quick', keywords=None, output_path=None, parallel=True, workers=10):
+def run_scraper(keywords=None, output_path=None, parallel=True, workers=10):
     """
     Run the job scraper.
 
     Args:
-        mode: 'quick' for API sources only, 'full' for all sources
         keywords: List of keywords to search for, or None to load from config
         output_path: Path to save jobs, or None for default
         parallel: Enable parallel processing
@@ -138,28 +137,13 @@ def run_scraper(mode='quick', keywords=None, output_path=None, parallel=True, wo
     ashby_companies.update(discovered.get('ashby', {}))
 
     # Define scrapers
-    fast_scrapers = [
+    scrapers = [
         ('Remotive', RemotiveScraper(config)),
         ('Greenhouse', GreenhouseScraper(config, greenhouse_companies)),
         ('Lever', LeverScraper(config, lever_companies)),
-        ('HackerNews', HackerNewsScraper(config)),
-    ]
-
-    medium_scrapers = [
         ('Ashby', AshbyScraper(config, ashby_companies)),
         ('LinkedIn', LinkedInScraper(config)),
     ]
-
-    # Select scrapers based on mode
-    if mode == 'quick':
-        scrapers = fast_scrapers
-        logger.info("QUICK MODE - API sources only")
-    elif mode == 'full':
-        scrapers = fast_scrapers + medium_scrapers
-        logger.info("FULL MODE - All sources")
-    else:
-        scrapers = fast_scrapers
-        logger.info("DEFAULT MODE - Fast sources")
 
     # Run scrapers
     for name, scraper in scrapers:
