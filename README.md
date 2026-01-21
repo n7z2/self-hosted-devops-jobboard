@@ -12,7 +12,6 @@ This tool automatically scrapes job postings from multiple sources:
 
 ### Job Board APIs
 - **Remotive** - Remote job board with DevOps category
-- **Hacker News** - Monthly "Who is Hiring" threads
 
 ### Applicant Tracking Systems (ATS)
 - **Greenhouse** - 140+ tech companies (Airbnb, Cloudflare, GitLab, etc.)
